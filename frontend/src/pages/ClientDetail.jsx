@@ -11,7 +11,7 @@ export default function ClientDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/api/clients/${id}`)
+    api.get(`/api/social/clients/${id}`)
       .then((r) => setClient(r.data))
       .finally(() => setLoading(false));
   }, [id]);

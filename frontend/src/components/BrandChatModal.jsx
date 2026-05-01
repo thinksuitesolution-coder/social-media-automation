@@ -30,7 +30,7 @@ export default function BrandChatModal({ client, onClose, onComplete }) {
 
     try {
       const history = newMessages.slice(1).map((m) => ({ role: m.role, content: m.content }));
-      const res = await api.post(`/api/clients/${client.id}/chat`, {
+      const res = await api.post(`/api/social/clients/${client.id}/chat`, {
         message: msg,
         chatHistory: history.slice(0, -1),
       });

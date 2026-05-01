@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/api/clients/stats')
+    api.get('/api/social/clients/stats')
       .then((r) => setStats(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));

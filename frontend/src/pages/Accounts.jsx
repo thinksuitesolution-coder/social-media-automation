@@ -90,7 +90,7 @@ export default function Accounts() {
   const [actionLoading, setActionLoading] = useState({});
 
   useEffect(() => {
-    api.get(`/api/clients/${clientId}`).then((r) => setClient(r.data));
+    api.get(`/api/social/clients/${clientId}`).then((r) => setClient(r.data));
     loadAccounts();
   }, [clientId]);
 

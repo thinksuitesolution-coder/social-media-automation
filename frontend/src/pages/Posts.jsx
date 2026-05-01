@@ -21,7 +21,7 @@ export default function Posts() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    api.get(`/api/clients/${clientId}`).then((r) => setClient(r.data));
+    api.get(`/api/social/clients/${clientId}`).then((r) => setClient(r.data));
   }, [clientId]);
 
   const loadPosts = useCallback(async () => {

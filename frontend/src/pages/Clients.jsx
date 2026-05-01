@@ -22,8 +22,8 @@ function ClientForm({ initial, onSave, onCancel }) {
     setLoading(true);
     try {
       const res = initial?.id
-        ? await api.put(`/api/clients/${initial.id}`, form)
-        : await api.post('/api/clients', form);
+        ? await api.put(`/api/social/clients/${initial.id}`, form)
+        : await api.post('/api/social/clients', form);
       onSave(res.data);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Save failed');
@@ -99,8 +99,8 @@ export default function Clients() {
 
   const load = () => {
     setLoading(true);
-    api.get('/api/clients')
-      .then((r) => setClients(r.data))
+    api.get('/api/social/clients')
+      .then((r) => setClients(r.data.clients))
       .finally(() => setLoading(false));
   };
 
@@ -109,7 +109,7 @@ export default function Clients() {
   const deleteClient = async (id, name) => {
     if (!confirm(`Delete client "${name}"? This will remove all their data.`)) return;
     try {
-      await api.delete(`/api/clients/${id}`);
+      await api.delete(`/api/social/clients/${id}`);
       setClients((c) => c.filter((x) => x.id !== id));
       toast.success('Client deleted');
     } catch {

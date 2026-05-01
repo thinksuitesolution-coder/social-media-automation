@@ -18,7 +18,7 @@ export default function Calendar() {
   const [year, setYear] = useState(now.getFullYear());
 
   useEffect(() => {
-    api.get(`/api/clients/${clientId}`).then((r) => setClient(r.data));
+    api.get(`/api/social/clients/${clientId}`).then((r) => setClient(r.data));
   }, [clientId]);
 
   const loadCalendar = useCallback(async () => {
