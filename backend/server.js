@@ -27,6 +27,21 @@ const linkbioRoutes     = require('./src/routes/linkbio.routes');
 const workflowRoutes    = require('./src/routes/workflows.routes');
 const agencyRoutes      = require('./src/routes/agency.routes');
 
+// Phase 7-10 routes
+const voiceRoutes          = require('./src/routes/voice.routes');
+const visualStyleRoutes    = require('./src/routes/visualstyle.routes');
+const personaRoutes        = require('./src/routes/persona.routes');
+const qualityRoutes        = require('./src/routes/quality.routes');
+const repurposeRoutes      = require('./src/routes/repurpose.routes');
+const platformCaptionRoutes = require('./src/routes/platformcaption.routes');
+const videoScriptRoutes    = require('./src/routes/videoscript.routes');
+const festivalRoutes       = require('./src/routes/festival.routes');
+const abtestRoutes         = require('./src/routes/abtest.routes');
+const schedulerRoutes      = require('./src/routes/scheduler.routes');
+const crisisRoutes         = require('./src/routes/crisis.routes');
+const commentsRoutes       = require('./src/routes/comments.routes');
+const growthRoutes         = require('./src/routes/growth.routes');
+
 const { errorHandler } = require('./src/middleware/error.middleware');
 const { initScheduler } = require('./src/utils/scheduler');
 const logger = require('./src/utils/logger');
@@ -48,7 +63,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/social', rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), features: 30 }));
+app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), features: 45 }));
 
 // ─── Existing Routes ───────────────────────────────────────────────────────────
 app.use('/api/social/clients',    clientRoutes);
@@ -70,9 +85,24 @@ app.use('/api/social/linkbio',     linkbioRoutes);
 app.use('/api/social/workflows',   workflowRoutes);
 app.use('/api/social/agency',      agencyRoutes);
 
+// ─── Phase 7-10 Routes (Features 33-45) ───────────────────────────────────────
+app.use('/api/social/voice',            voiceRoutes);
+app.use('/api/social/visual-style',     visualStyleRoutes);
+app.use('/api/social/persona',          personaRoutes);
+app.use('/api/social/quality',          qualityRoutes);
+app.use('/api/social/repurpose',        repurposeRoutes);
+app.use('/api/social/platform-caption', platformCaptionRoutes);
+app.use('/api/social/video-script',     videoScriptRoutes);
+app.use('/api/social/festival',         festivalRoutes);
+app.use('/api/social/abtest',           abtestRoutes);
+app.use('/api/social/scheduler',        schedulerRoutes);
+app.use('/api/social/crisis',           crisisRoutes);
+app.use('/api/social/comments',         commentsRoutes);
+app.use('/api/social/growth',           growthRoutes);
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  logger.info(`Social Media API running on port ${PORT} — Features 1-30 active`);
+  logger.info(`Social Media API running on port ${PORT} — Features 1-45 active`);
   initScheduler();
 });
