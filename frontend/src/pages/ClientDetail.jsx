@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, FileText, Link2, ArrowLeft, Instagram, Phone } from 'lucide-react';
+import { Calendar, FileText, Link2, ArrowLeft, Instagram, Phone, Brain, Share2, Star, FlaskConical, ShieldAlert, ShieldCheck } from 'lucide-react';
 import api from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatDate } from '../utils/helpers';
@@ -83,34 +83,75 @@ export default function ClientDetail() {
       <div className="card p-5">
         <h2 className="font-semibold text-white text-sm mb-4">Quick Actions</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link
-            to={`/calendar/${id}`}
-            className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
-          >
+          <Link to={`/calendar/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
             <Calendar size={20} className="text-brand-400" />
             <div>
               <p className="text-sm font-medium text-white">Content Calendar</p>
               <p className="text-xs text-slate-400">Generate & manage monthly content</p>
             </div>
           </Link>
-          <Link
-            to={`/posts/${id}`}
-            className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
-          >
+          <Link to={`/posts/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
             <FileText size={20} className="text-green-400" />
             <div>
               <p className="text-sm font-medium text-white">Posts</p>
               <p className="text-xs text-slate-400">View & manage all posts</p>
             </div>
           </Link>
-          <Link
-            to={`/accounts/${id}`}
-            className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
-          >
+          <Link to={`/accounts/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
             <Link2 size={20} className="text-purple-400" />
             <div>
               <p className="text-sm font-medium text-white">Social Accounts</p>
               <p className="text-xs text-slate-400">Manage connected accounts</p>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* AI Features — Phase 7-10 */}
+      <div className="card p-5">
+        <h2 className="font-semibold text-white text-sm mb-1">AI Features</h2>
+        <p className="text-xs text-slate-500 mb-4">Advanced AI tools powered by Gemini</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Link to={`/brand-intel/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <Brain size={20} className="text-pink-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Brand Intelligence</p>
+              <p className="text-xs text-slate-400">Voice trainer · Visual style · Persona</p>
+            </div>
+          </Link>
+          <Link to={`/content-tools/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <Share2 size={20} className="text-sky-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Content Tools</p>
+              <p className="text-xs text-slate-400">Repurpose · Multi-platform · Video scripts</p>
+            </div>
+          </Link>
+          <Link to={`/festival/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <Star size={20} className="text-yellow-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Festival Engine</p>
+              <p className="text-xs text-slate-400">Never miss an Indian festival</p>
+            </div>
+          </Link>
+          <Link to={`/optimize/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <FlaskConical size={20} className="text-orange-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Optimization</p>
+              <p className="text-xs text-slate-400">A/B testing · Smart scheduler</p>
+            </div>
+          </Link>
+          <Link to={`/protection/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <ShieldAlert size={20} className="text-red-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Protection & Growth</p>
+              <p className="text-xs text-slate-400">Crisis · Comments · Growth advisor</p>
+            </div>
+          </Link>
+          <Link to={`/quality/${id}`} className="flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+            <ShieldCheck size={20} className="text-teal-400" />
+            <div>
+              <p className="text-sm font-medium text-white">Quality Checker</p>
+              <p className="text-xs text-slate-400">AI reviews before every post goes live</p>
             </div>
           </Link>
         </div>

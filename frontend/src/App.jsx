@@ -9,6 +9,12 @@ import ClientDetail from './pages/ClientDetail';
 import Calendar from './pages/Calendar';
 import Posts from './pages/Posts';
 import Accounts from './pages/Accounts';
+import BrandIntelligence from './pages/BrandIntelligence';
+import ContentTools from './pages/ContentTools';
+import FestivalEngine from './pages/FestivalEngine';
+import OptimizationTools from './pages/OptimizationTools';
+import ProtectionTools from './pages/ProtectionTools';
+import QualityChecker from './pages/QualityChecker';
 import LoadingSpinner from './components/LoadingSpinner';
 
 function PrivateRoute({ children }) {
@@ -37,6 +43,13 @@ export default function App() {
             <Route path="calendar/:clientId" element={<Calendar />} />
             <Route path="posts/:clientId" element={<Posts />} />
             <Route path="accounts/:clientId" element={<Accounts />} />
+            {/* Phase 7-10 — AI Features */}
+            <Route path="brand-intel/:clientId" element={<BrandIntelligence />} />
+            <Route path="content-tools/:clientId" element={<ContentTools />} />
+            <Route path="festival/:clientId" element={<FestivalEngine />} />
+            <Route path="optimize/:clientId" element={<OptimizationTools />} />
+            <Route path="protection/:clientId" element={<ProtectionTools />} />
+            <Route path="quality/:clientId" element={<QualityChecker />} />
           </Route>
         </Routes>
       </BrowserRouter>
