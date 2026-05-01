@@ -1,9 +1,10 @@
 const { db, convertDoc, snapToArr } = require('../utils/firebase');
+const geminiService = require('../services/gemini.service');
 
 async function createClient(req, res, next) {
   try {
     const uid = req.user.uid;
-    const { name, niche, tone, targetAudience, whatsappNumber, instagramAccountId, instagramToken, defaultImageProvider } = req.body;
+    const { name, niche, tone, targetAudience, whatsappNumber, instagramAccountId, instagramToken, defaultImageProvider, websiteUrl } = req.body;
     if (!name || !niche || !tone || !targetAudience || !whatsappNumber) {
       return res.status(400).json({ error: 'Required fields missing' });
     }
@@ -12,6 +13,8 @@ async function createClient(req, res, next) {
       instagramAccountId: instagramAccountId || '',
       instagramToken: instagramToken || '',
       defaultImageProvider: defaultImageProvider || 'DALLE',
+      websiteUrl: websiteUrl || '',
+      brandInfo: null,
       createdAt: new Date().toISOString(),
     });
     const doc = await ref.get();
@@ -129,4 +132,26 @@ async function getDashboardStats(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { createClient, getClients, getClient, updateClient, deleteClient, getDashboardStats };
+async function chatWithBrand(req, res, next) {
+  try {
+    const uid = req.user.uid;
+    const { id } = req.params;
+    const { message, chatHistory = [] } = req.body;
+
+    const clientDoc = await db.collection('socialClients').doc(id).get();
+    if (!clientDoc.exists || clientDoc.data().userId !== uid) return res.status(404).json({ error: 'Client not found' });
+    const client = convertDoc(clientDoc);
+
+    const { reply, brandInfo, isComplete } = await geminiService.generateChatResponse({
+      brandName: client.name, niche: client.niche, chatHistory, userMessage: message,
+    });
+
+    if (isComplete && brandInfo) {
+      await db.collection('socialClients').doc(id).update({ brandInfo, updatedAt: new Date().toISOString() });
+    }
+
+    res.json({ reply, brandInfo, isComplete });
+  } catch (err) { next(err); }
+}
+
+module.exports = { createClient, getClients, getClient, updateClient, deleteClient, getDashboardStats, chatWithBrand };

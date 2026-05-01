@@ -10,5 +10,6 @@ router.get('/', ctrl.getClients);
 router.get('/:id', ctrl.getClient);
 router.put('/:id', ctrl.updateClient);
 router.delete('/:id', ctrl.deleteClient);
+router.post('/:id/chat', ctrl.chatWithBrand);
 
 module.exports = router;

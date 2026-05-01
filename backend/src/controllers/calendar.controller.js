@@ -28,6 +28,7 @@ async function generateCalendar(req, res, next) {
     const days = await geminiService.generateCalendar({
       brandName: client.name, niche: client.niche, tone: client.tone,
       targetAudience: client.targetAudience, month: Number(month), year: Number(year),
+      brandInfo: client.brandInfo || null,
     });
 
     await db.collection('socialCalendars').doc(calId).set({
