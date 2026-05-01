@@ -1,0 +1,76 @@
+const axios = require('axios');
+const logger = require('../utils/logger');
+
+const IG_BASE = 'https://graph.facebook.com/v18.0';
+
+async function uploadToInstagram({ igAccountId, accessToken, imageUrl, caption, hashtags }) {
+  // Fallback to global credentials if client has none
+  igAccountId = igAccountId || process.env.INSTAGRAM_ACCOUNT_ID;
+  accessToken = accessToken || process.env.INSTAGRAM_ACCESS_TOKEN;
+  const fullCaption = `${caption}\n\n${hashtags}`;
+
+  // Step 1: Create media container
+  const containerRes = await axios.post(`${IG_BASE}/${igAccountId}/media`, {
+    image_url: imageUrl,
+    caption: fullCaption.substring(0, 2200),
+    access_token: accessToken,
+  });
+  const creationId = containerRes.data.id;
+
+  // Step 2: Wait for container to be ready
+  await waitForContainer(igAccountId, creationId, accessToken);
+
+  // Step 3: Publish the container
+  const publishRes = await axios.post(`${IG_BASE}/${igAccountId}/media_publish`, {
+    creation_id: creationId,
+    access_token: accessToken,
+  });
+  const igPostId = publishRes.data.id;
+
+  // Step 4: Get post permalink
+  const postData = await axios.get(`${IG_BASE}/${igPostId}`, {
+    params: { fields: 'permalink,timestamp', access_token: accessToken },
+  });
+
+  return {
+    instagramPostId: igPostId,
+    instagramUrl: postData.data.permalink,
+    postedAt: new Date(postData.data.timestamp || Date.now()),
+  };
+}
+
+async function waitForContainer(igAccountId, creationId, accessToken, maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const statusRes = await axios.get(`${IG_BASE}/${creationId}`, {
+      params: { fields: 'status_code,status', access_token: accessToken },
+    });
+    const { status_code } = statusRes.data;
+    if (status_code === 'FINISHED') return;
+    if (status_code === 'ERROR' || status_code === 'EXPIRED') {
+      throw new Error(`Media container failed with status: ${status_code}`);
+    }
+  }
+  throw new Error('Media container timed out');
+}
+
+async function getAccountInfo(igAccountId, accessToken) {
+  const res = await axios.get(`${IG_BASE}/${igAccountId}`, {
+    params: { fields: 'name,username,followers_count,media_count,profile_picture_url', access_token: accessToken },
+  });
+  return res.data;
+}
+
+async function refreshLongLivedToken(shortToken) {
+  const res = await axios.get(`${IG_BASE}/oauth/access_token`, {
+    params: {
+      grant_type: 'fb_exchange_token',
+      client_id: process.env.FACEBOOK_APP_ID,
+      client_secret: process.env.FACEBOOK_APP_SECRET,
+      fb_exchange_token: shortToken,
+    },
+  });
+  return res.data;
+}
+
+module.exports = { uploadToInstagram, getAccountInfo, refreshLongLivedToken };
