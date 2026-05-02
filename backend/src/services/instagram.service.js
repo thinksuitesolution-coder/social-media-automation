@@ -3,14 +3,10 @@ const logger = require('../utils/logger');
 
 const IG_BASE = 'https://graph.facebook.com/v18.0';
 
-// Scopes required for Instagram Content Publishing
+// Scopes required for Instagram Business Login API
 const IG_SCOPES = [
-  'instagram_content_publish',
-  'instagram_manage_comments',
-  'instagram_manage_insights',
-  'pages_show_list',
-  'pages_read_engagement',
-  'public_profile',
+  'instagram_business_basic',
+  'instagram_business_content_publish',
 ].join(',');
 
 function getOAuthURL(redirectUri, state) {
