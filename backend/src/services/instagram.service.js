@@ -3,6 +3,95 @@ const logger = require('../utils/logger');
 
 const IG_BASE = 'https://graph.facebook.com/v18.0';
 
+// Scopes required for Instagram Content Publishing
+const IG_SCOPES = [
+  'instagram_content_publish',
+  'instagram_manage_comments',
+  'instagram_manage_insights',
+  'pages_show_list',
+  'pages_read_engagement',
+  'public_profile',
+].join(',');
+
+function getOAuthURL(redirectUri, state) {
+  const params = new URLSearchParams({
+    client_id:     process.env.FACEBOOK_APP_ID,
+    redirect_uri:  redirectUri,
+    scope:         IG_SCOPES,
+    response_type: 'code',
+    state:         state || 'instagram_oauth',
+  });
+  return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+}
+
+async function exchangeCodeForToken(code, redirectUri) {
+  // Step 1: Short-lived user token
+  const shortRes = await axios.get(`${IG_BASE}/oauth/access_token`, {
+    params: {
+      client_id:     process.env.FACEBOOK_APP_ID,
+      client_secret: process.env.FACEBOOK_APP_SECRET,
+      redirect_uri:  redirectUri,
+      code,
+    },
+  });
+  const shortToken = shortRes.data.access_token;
+
+  // Step 2: Long-lived token (~60 days)
+  const longRes = await axios.get(`${IG_BASE}/oauth/access_token`, {
+    params: {
+      grant_type:       'fb_exchange_token',
+      client_id:        process.env.FACEBOOK_APP_ID,
+      client_secret:    process.env.FACEBOOK_APP_SECRET,
+      fb_exchange_token: shortToken,
+    },
+  });
+  const longToken  = longRes.data.access_token;
+  const expiresIn  = longRes.data.expires_in || 5184000; // default 60 days
+
+  // Step 3: Get Facebook Pages the user manages
+  const pagesRes = await axios.get(`${IG_BASE}/me/accounts`, {
+    params: { access_token: longToken },
+  });
+  const pages = pagesRes.data.data || [];
+
+  // Step 4: Find Instagram Business Account linked to each Page
+  const instagramAccounts = [];
+  for (const page of pages) {
+    try {
+      const igLinkRes = await axios.get(`${IG_BASE}/${page.id}`, {
+        params: { fields: 'instagram_business_account', access_token: page.access_token },
+      });
+      const igId = igLinkRes.data.instagram_business_account?.id;
+      if (!igId) continue;
+
+      const igInfoRes = await axios.get(`${IG_BASE}/${igId}`, {
+        params: {
+          fields:       'name,username,profile_picture_url,followers_count',
+          access_token: page.access_token,
+        },
+      });
+      instagramAccounts.push({
+        igAccountId:      igId,
+        pageId:           page.id,
+        pageName:         page.name,
+        pageAccessToken:  page.access_token,
+        username:         igInfoRes.data.username,
+        name:             igInfoRes.data.name,
+        profilePic:       igInfoRes.data.profile_picture_url,
+        followersCount:   igInfoRes.data.followers_count,
+      });
+    } catch (err) {
+      logger.warn(`Instagram lookup failed for page ${page.id}: ${err.message}`);
+    }
+  }
+
+  const tokenExpiry = new Date();
+  tokenExpiry.setSeconds(tokenExpiry.getSeconds() + expiresIn);
+
+  return { longToken, tokenExpiry: tokenExpiry.toISOString(), instagramAccounts };
+}
+
+
 async function uploadToInstagram({ igAccountId, accessToken, imageUrl, caption, hashtags }) {
   // Fallback to global credentials if client has none
   igAccountId = igAccountId || process.env.INSTAGRAM_ACCOUNT_ID;
@@ -73,4 +162,4 @@ async function refreshLongLivedToken(shortToken) {
   return res.data;
 }
 
-module.exports = { uploadToInstagram, getAccountInfo, refreshLongLivedToken };
+module.exports = { uploadToInstagram, getAccountInfo, refreshLongLivedToken, getOAuthURL, exchangeCodeForToken };

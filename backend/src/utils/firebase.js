@@ -1,7 +1,15 @@
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(raw);
+  } catch {
+    // Railway converts \n escape sequences to actual newlines inside env var values.
+    // Re-escape them so JSON.parse can handle the private key correctly.
+    serviceAccount = JSON.parse(raw.replace(/\n/g, '\\n'));
+  }
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });

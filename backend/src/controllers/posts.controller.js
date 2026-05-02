@@ -1,24 +1,8 @@
-const { db, convertDoc, snapToArr } = require('../utils/firebase');
-const geminiService    = require('../services/gemini.service');
-const dalleService     = require('../services/dalle.service');
-const replicateService = require('../services/replicate.service');
-const imagenService    = require('../services/imagen.service');
-const cloudinaryService = require('../services/cloudinary.service');
-const whatsappService  = require('../services/whatsapp.service');
-const instagramService = require('../services/instagram.service');
-
-async function generateImage(prompt, provider, postId) {
-  switch (provider) {
-    case 'DALLE':
-      return cloudinaryService.uploadImage(await dalleService.generateWithDalle(prompt), postId);
-    case 'REPLICATE':
-      return cloudinaryService.uploadImage(await replicateService.generateWithReplicate(prompt), postId);
-    case 'GEMINI':
-      return imagenService.generateWithImagen(prompt, postId);
-    default:
-      return cloudinaryService.uploadImage(await dalleService.generateWithDalle(prompt), postId);
-  }
-}
+const { db, convertDoc, snapToArr }       = require('../utils/firebase');
+const geminiService                        = require('../services/gemini.service');
+const whatsappService                      = require('../services/whatsapp.service');
+const instagramService                     = require('../services/instagram.service');
+const { generateImageWithFallback }        = require('../utils/imageGenerator');
 
 async function getClientLearning(clientId) {
   try {
@@ -64,7 +48,8 @@ async function generatePost(req, res, next) {
       geminiService.generateHashtags({ niche: client.niche, topic }),
     ]);
 
-    const imageUrl = await generateImage(imagePrompt, provider, postDocId);
+    const { url: imageUrl, provider: usedProvider } =
+      await generateImageWithFallback(imagePrompt, provider, postDocId);
     const now = new Date().toISOString();
 
     const postData = {
@@ -72,7 +57,7 @@ async function generatePost(req, res, next) {
       calendarId: calendarId || null, calendarDayId: dayId || null,
       date: date || now, topic,
       caption: caption.trim(), hashtags: hashtags.trim(),
-      imageUrl, imagePrompt, imageProvider: provider,
+      imageUrl, imagePrompt, imageProvider: usedProvider,
       status: 'PENDING',
       scheduledTime: null, whatsappMessageId: null,
       instagramPostId: null, instagramUrl: null,
@@ -117,8 +102,11 @@ async function regenerateImage(req, res, next) {
     const client = convertDoc(clientDoc);
     const provider = imageProvider || post.imageProvider || client.defaultImageProvider;
 
-    const imageUrl = await generateImage(post.imagePrompt, provider, post.id);
-    await db.collection('socialPosts').doc(post.id).update({ imageUrl, imageProvider: provider, updatedAt: new Date().toISOString() });
+    const { url: imageUrl, provider: usedProvider } =
+      await generateImageWithFallback(post.imagePrompt, provider, post.id);
+    await db.collection('socialPosts').doc(post.id).update({
+      imageUrl, imageProvider: usedProvider, updatedAt: new Date().toISOString(),
+    });
     res.json({ imageUrl });
   } catch (err) { next(err); }
 }

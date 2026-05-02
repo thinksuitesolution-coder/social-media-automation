@@ -1,8 +1,8 @@
-const cron = require('node-cron');
+const cron             = require('node-cron');
 const { db, convertDoc, snapToArr } = require('./firebase');
 const instagramService = require('../services/instagram.service');
-const whatsappService = require('../services/whatsapp.service');
-const logger = require('./logger');
+const whatsappService  = require('../services/whatsapp.service');
+const logger           = require('./logger');
 
 function startOfHour(date) {
   const d = new Date(date); d.setMinutes(0, 0, 0); return d.toISOString();
@@ -11,6 +11,7 @@ function endOfHour(date) {
   const d = new Date(date); d.setMinutes(59, 59, 999); return d.toISOString();
 }
 
+/* ─── Auto-publish approved posts at 9/12/18 ───────────────────────────────── */
 async function autoPublishApprovedPosts() {
   const now = new Date();
   if (![9, 12, 18].includes(now.getHours())) return;
@@ -42,11 +43,12 @@ async function autoPublishApprovedPosts() {
       });
       logger.info(`Scheduler: Published post ${post.id}`);
     } catch (err) {
-      logger.error(`Scheduler: Failed post ${post.id}:`, err.message);
+      logger.error(`Scheduler: Failed post ${post.id}: ${err.message}`);
     }
   }
 }
 
+/* ─── Send reminders for pending posts > 24h ───────────────────────────────── */
 async function sendPendingReminders() {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -64,19 +66,72 @@ async function sendPendingReminders() {
       const dateStr = new Date(post.scheduledTime || post.date).toLocaleDateString('en-IN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
       });
-      await whatsappService.sendReminder(client.whatsappNumber, { postId: post.id, caption: post.caption, date: dateStr });
-      await db.collection('socialPosts').doc(post.id).update({ reminderSentAt: new Date().toISOString() });
+      await whatsappService.sendReminder(client.whatsappNumber, {
+        postId: post.id, caption: post.caption, date: dateStr,
+      });
+      await db.collection('socialPosts').doc(post.id).update({
+        reminderSentAt: new Date().toISOString(),
+      });
       logger.info(`Scheduler: Reminder sent for post ${post.id}`);
     } catch (err) {
-      logger.error(`Scheduler: Reminder failed for ${post.id}:`, err.message);
+      logger.error(`Scheduler: Reminder failed for ${post.id}: ${err.message}`);
     }
   }
 }
 
+/* ─── Weekly token auto-refresh (every Sunday at 3am UTC) ──────────────────── */
+// Refreshes any Instagram token expiring within 30 days.
+// Also syncs the new token to the socialClients document.
+async function refreshExpiringTokens() {
+  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const snap = await db.collection('socialAccounts')
+    .where('platform', '==', 'INSTAGRAM')
+    .where('isActive', '==', true)
+    .get();
+
+  let refreshed = 0;
+  for (const doc of snap.docs) {
+    const account = convertDoc(doc);
+    if (!account.tokenExpiry || account.tokenExpiry > thirtyDaysFromNow) continue;
+
+    try {
+      const result = await instagramService.refreshLongLivedToken(account.accessToken);
+      const newExpiry = new Date();
+      newExpiry.setSeconds(newExpiry.getSeconds() + (result.expires_in || 5184000));
+
+      await db.collection('socialAccounts').doc(account.id).update({
+        accessToken:  result.access_token,
+        tokenExpiry:  newExpiry.toISOString(),
+        updatedAt:    new Date().toISOString(),
+      });
+
+      // Sync to any client that uses this Instagram account
+      const clientsSnap = await db.collection('socialClients')
+        .where('instagramAccountId', '==', account.accountId)
+        .get();
+      for (const clientDoc of clientsSnap.docs) {
+        await db.collection('socialClients').doc(clientDoc.id).update({
+          instagramToken: result.access_token,
+          updatedAt:      new Date().toISOString(),
+        });
+      }
+
+      refreshed++;
+      logger.info(`Scheduler: Token refreshed for account ${account.id}`);
+    } catch (err) {
+      logger.error(`Scheduler: Token refresh failed for ${account.id}: ${err.message}`);
+    }
+  }
+  logger.info(`Scheduler: Token refresh run complete — ${refreshed} refreshed`);
+}
+
+/* ─── Init ──────────────────────────────────────────────────────────────────── */
 function initScheduler() {
-  cron.schedule('0 * * * *', autoPublishApprovedPosts);
-  cron.schedule('0 */2 * * *', sendPendingReminders);
-  logger.info('Scheduler initialized');
+  cron.schedule('0 * * * *',   autoPublishApprovedPosts);  // every hour
+  cron.schedule('0 */2 * * *', sendPendingReminders);      // every 2 hours
+  cron.schedule('0 3 * * 0',   refreshExpiringTokens);     // every Sunday 3am UTC
+  logger.info('Scheduler initialized (auto-publish + reminders + token refresh)');
 }
 
 module.exports = { initScheduler };

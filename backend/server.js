@@ -7,6 +7,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
+// OAuth routes (Instagram connect)
+const oauthRoutes    = require('./src/routes/oauth.routes');
+
 // Existing routes
 const clientRoutes   = require('./src/routes/clients.routes');
 const calendarRoutes = require('./src/routes/calendar.routes');
@@ -64,6 +67,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/social', rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true }));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), features: 45 }));
+
+// ─── OAuth Routes (public — no rate limit) ────────────────────────────────────
+app.use('/auth', oauthRoutes);
 
 // ─── Existing Routes ───────────────────────────────────────────────────────────
 app.use('/api/social/clients',    clientRoutes);
